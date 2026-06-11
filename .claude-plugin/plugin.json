@@ -1,0 +1,6 @@
+{
+  "name": "tomerab-skills",
+  "description": "Personal Claude Code skills: interactive test planning (propose -> human curates -> generate).",
+  "version": "0.1.0",
+  "author": { "name": "tomerab" }
+}
