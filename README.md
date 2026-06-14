@@ -22,16 +22,31 @@ blind spots. The curation step injects developer domain knowledge before any
 test code exists, and the committed plan makes "what we decided to verify"
 reviewable history.
 
+### dm-todos
+
+On-demand Slack catch-up — no scheduled agents, runs only when invoked:
+
+1. Scans DMs, group DMs, and channel @-mentions since the last run
+   (tracked in `~/.claude/dm-todos-state.json`; first run looks back 7 days)
+2. Classifies what needs attention: **Needs action**, **Awaiting your
+   reply**, **FYI** — skipping chatter, resolved threads, and bot noise
+3. Maintains a "Slack Todos" canvas (linked in the self-DM) as a persistent
+   checklist; unchecked items carry over between runs, resolved ones move to
+   "Recently done"
+4. Shows the actionable sections directly in the response
+
+Requires the Slack MCP integration. Handles Hebrew and English messages.
+
 ## Install
 
 **Per-user (all projects):**
 
 ```sh
 mkdir -p ~/.claude/skills
-cp -R skills/test-planner ~/.claude/skills/
+cp -R skills/<skill-name> ~/.claude/skills/
 ```
 
-**Per-project:** copy `skills/test-planner` into the project's
+**Per-project:** copy `skills/<skill-name>` into the project's
 `.claude/skills/` and commit it.
 
 **As a plugin (development):**
