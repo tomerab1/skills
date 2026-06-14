@@ -12,7 +12,7 @@ The user is Tomer (Slack user ID `U0A1G6UUGUQ`). He often misses DMs, so the goa
 ## Steps
 
 1. **Determine the time window.**
-   - Read `~/.claude/dm-todos-state.json` if it exists; it contains `{"last_run": "<unix timestamp>", "canvas_id": "F..."}`.
+   - Read `~/.claude/dm-todos-state.json` if it exists; it contains `{"last_run": "<unix timestamp>", "canvas_id": "F...", "last_drain": "<YYYY-MM-DD>"}`.
    - If missing, default to 7 days ago. Get the current unix timestamp with `date +%s` via Bash.
    - Scan from `last_run` minus a 1-hour overlap (to avoid missing edge messages) up to now.
 
@@ -30,11 +30,13 @@ The user is Tomer (Slack user ID `U0A1G6UUGUQ`). He often misses DMs, so the goa
    - For every item you keep, record the source message's **permalink** — the `Permalink` field in each search/read result — so the canvas can link straight to it.
 
 4. **Update the canvas.** Maintain the "Slack Todos" Slack canvas (load canvas tools via ToolSearch if needed):
-   - Get `canvas_id` from the state file. If present, `slack_read_canvas` first: preserve unchecked items from previous runs unless this run's messages show they were resolved — in that case check them off (move to "Recently done", keep max ~10 there). Also respect items the user checked off himself. Then `slack_update_canvas` with `action: "replace"` and NO `section_id` — full replacement is intended; this canvas is owned by the skill.
+   - Get `canvas_id` from the state file. If present, `slack_read_canvas` first: preserve unchecked items from previous runs unless this run's messages show they were resolved. Then `slack_update_canvas` with `action: "replace"` and NO `section_id` — full replacement is intended; this canvas is owned by the skill.
+   - **Completing items.** Any item checked `[x]` in "Needs action" or "Awaiting your reply" — whether the user ticked it himself or this run's messages show it's resolved — moves to the "Recently done" list (kept as `[x]`). Never leave a checked item in an active section, and never silently delete it.
+   - **Daily drain.** "Recently done" is cleared once per calendar day: if `last_drain` in state is missing or earlier than today's date, empty the "Recently done" section on this run and set `last_drain` to today. Items completed later the same day accumulate and survive until the next day's first run. (Within-day safety cap: keep at most ~15.)
    - If `canvas_id` is missing (or reading it fails because it was deleted), `slack_create_canvas` titled "Slack Todos", save the new ID to state, and send its link to the user's self-DM (`slack_send_message` with channel_id `U0A1G6UUGUQ`) so it's findable in his "to myself" PM.
    - Structure (canvas-flavored markdown — the title is set separately, don't repeat it):
      ```markdown
-     _עודכן: <YYYY-MM-DD HH:MM>_
+     _Updated: <YYYY-MM-DD HH:MM>_
 
      ## 🔴 Needs action
      - [ ] **<Person>**: <what they need, in one line> [↗](<source message permalink>) _(<date>)_
@@ -48,10 +50,10 @@ The user is Tomer (Slack user ID `U0A1G6UUGUQ`). He often misses DMs, so the goa
      ## ✅ Recently done
      - [x] ...
      ```
-   - Write items in the language the user would expect (keep Hebrew items in Hebrew, English in English).
+   - **Always write items in English**, even when the source message is in Hebrew — translate/summarize into concise English. (RTL Hebrew mixed with LTR links, `code`, PR/ticket refs and dates on one line renders with jumbled order in the canvas.) Keep quoted snippets, names, ticket/PR refs, and code identifiers verbatim.
    - Keep each item to one line; the canvas is for glancing, not reading.
    - **Message reference.** End each item with a compact `[↗](<permalink>)` link to its exact source message — never paste the raw URL as text. Use the `Permalink` from the search/read result, or build it as `https://<workspace>.slack.com/archives/<channel_id>/p<ts with the dot removed>` (for a thread reply, append `?thread_ts=<parent_ts>&cid=<channel_id>`). If an item has no reliable permalink, omit the ref rather than guess. Carried-over items from a previous canvas keep whatever ref they already had; only newly found items get a fresh one.
 
-5. **Save state.** Write `~/.claude/dm-todos-state.json` with the current unix timestamp as `last_run` and the `canvas_id`.
+5. **Save state.** Write `~/.claude/dm-todos-state.json` with the current unix timestamp as `last_run`, the `canvas_id`, and `last_drain` (today's date if you drained this run, otherwise carry the previous value).
 
 6. **Report.** Show the user the "Needs action" and "Awaiting your reply" sections directly in the response (not just "canvas updated"), plus the canvas link and a one-line note of how many FYIs were filed. If nothing new came in, say so plainly.
