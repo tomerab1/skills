@@ -37,6 +37,36 @@ On-demand Slack catch-up — no scheduled agents, runs only when invoked:
 
 Requires the Slack MCP integration. Handles Hebrew and English messages.
 
+### clickup-todos
+
+The ClickUp sibling of `dm-todos` — same output, different source:
+
+1. Scans the user's ClickUp tasks and the comments/@mentions on them since
+   the last run (tracked in `~/.claude/clickup-todos-state.json`; first run
+   looks back 14 days)
+2. Surfaces what needs attention — tasks assigned to him, mentions, and
+   recently updated/commented items
+3. Maintains a dedicated "ClickUp Todos" canvas (in the self-DM) as a
+   persistent checklist; unchecked items carry over between runs, resolved
+   ones drain to "Recently done"
+
+Requires the ClickUp and Slack MCP integrations.
+
+### github-todos
+
+The GitHub sibling of `dm-todos` / `clickup-todos` — scoped to the
+`singit-dev-org` org via the `gh` CLI:
+
+1. Scans for PRs awaiting his review, his own PRs that are blocked or ready
+   to merge, @mentions, and issues/PRs assigned to him (state tracked in
+   `~/.claude/github-todos-state.json`; first run looks back 14 days)
+2. Enriches each of his open PRs with review/merge/CI status to flag blockers
+3. Maintains a dedicated "GitHub Todos" canvas (in the self-DM) as a
+   persistent checklist; unchecked items carry over between runs, resolved
+   ones drain to "Recently done"
+
+Requires the `gh` CLI (authenticated) and the Slack MCP integration.
+
 ## Install
 
 **Per-user (all projects):**
@@ -54,3 +84,29 @@ cp -R skills/<skill-name> ~/.claude/skills/
 ```sh
 claude --plugin-dir /path/to/tomerab-skills
 ```
+
+## Running
+
+Each skill is invoked from inside Claude Code by name:
+
+```
+/dm-todos
+/clickup-todos
+/github-todos
+/test-planner <file | diff | feature>
+```
+
+The three todo-digest skills (`dm-todos`, `clickup-todos`, `github-todos`)
+are on-demand and stateful — they track the last run in
+`~/.claude/<skill>-state.json` and pick up where they left off, so they're
+made to be run repeatedly.
+
+To run one on a recurring basis, use the built-in `/loop` skill with an
+interval:
+
+```
+/loop 30m /dm-todos
+```
+
+Omit the interval to let Claude self-pace the cadence. `/loop` keeps the
+catch-up running in the background without any external scheduler.
