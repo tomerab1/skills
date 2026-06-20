@@ -34,60 +34,119 @@ CHROME_CANDIDATES = [
 ]
 
 # ---------------------------------------------------------------- inline md
-def inline(s: str) -> str:
-    # escape first, then re-introduce markup
+def inline(s: str, fn: dict | None = None) -> str:
+    """Inline markup. `fn` maps footnote id -> {url,label} for [^id] citations."""
+    fn = fn or {}
     s = html.escape(s, quote=False)
     s = re.sub(r"`([^`]+)`", r"<code>\1</code>", s)
+    # footnote citation [^id] -> superscript link to the section URL
+    def _cite(m):
+        fid = m.group(1)
+        url = fn.get(fid, {}).get("url", "")
+        href = f' href="{html.escape(url, quote=True)}"' if url else ""
+        return f'<sup class="cite"><a{href}>{html.escape(fid)}</a></sup>'
+    s = re.sub(r"\[\^([\w.-]+)\]", _cite, s)
     s = re.sub(r"\*\*([^*]+)\*\*", r"<strong>\1</strong>", s)
     s = re.sub(r"__([^_]+)__", r"<strong>\1</strong>", s)
     s = re.sub(r"(?<!\*)\*([^*]+)\*(?!\*)", r"<em>\1</em>", s)
-    # _italic_ : require word boundaries so URLs/identifiers with _ are untouched
     s = re.sub(r"(?<![\w])_([^_]+)_(?![\w])", r"<em>\1</em>", s)
-    # links: [text](url)  -> <a href>text</a>
+    # inline links: [text](url)
     s = re.sub(r"\[([^\]]+)\]\((https?://[^)\s]+)\)",
                lambda m: f'<a href="{html.escape(m.group(2),quote=True)}">{m.group(1)}</a>',
                s)
     return s
 
+FN_DEF = re.compile(r"^\[\^([\w.-]+)\]:\s*(.*)$")
+URL_RE = re.compile(r"(https?://\S+)")
+
+def _is_table_sep(s: str) -> bool:
+    return bool(re.match(r"^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)+\|?\s*$", s))
+
+def _row_cells(s: str) -> list[str]:
+    s = s.strip()
+    if s.startswith("|"): s = s[1:]
+    if s.endswith("|"):   s = s[:-1]
+    return [c.strip() for c in s.split("|")]
+
 # ---------------------------------------------------------------- block md
 def md_to_html(md: str) -> str:
-    out, i = [], 0
     lines = md.replace("\r\n", "\n").split("\n")
-    n = len(lines)
+
+    # pass 1: pull out footnote definitions  [^id]: label... <url>
+    footnotes: dict = {}
+    order: list = []
+    body_lines: list = []
+    for ln in lines:
+        m = FN_DEF.match(ln)
+        if m:
+            fid, rest = m.group(1), m.group(2).strip()
+            um = URL_RE.search(rest)
+            url = um.group(1) if um else ""
+            label = (rest[:um.start()] + rest[um.end():] if um else rest).strip(" —-·\t")
+            footnotes[fid] = {"url": url, "label": label or fid}
+            order.append(fid)
+        else:
+            body_lines.append(ln)
+
+    out, i, n = [], 0, len(body_lines)
     while i < n:
-        ln = lines[i]
+        ln = body_lines[i]
         if not ln.strip():
             i += 1; continue
         m = re.match(r"^(#{1,6})\s+(.*)$", ln)
         if m:
             lvl = len(m.group(1))
-            out.append(f"<h{lvl}>{inline(m.group(2).strip())}</h{lvl}>")
+            out.append(f"<h{lvl}>{inline(m.group(2).strip(), footnotes)}</h{lvl}>")
             i += 1; continue
-        if re.match(r"^\s*([-*_])\s*\1\s*\1[\s\1]*$", ln):  # --- *** ___
+        # pipe table: header row, then a separator row of dashes
+        if "|" in ln and i + 1 < n and _is_table_sep(body_lines[i + 1]):
+            header = _row_cells(ln)
+            i += 2
+            rows = []
+            while i < n and "|" in body_lines[i] and body_lines[i].strip():
+                rows.append(_row_cells(body_lines[i])); i += 1
+            th = "".join(f"<th>{inline(c, footnotes)}</th>" for c in header)
+            trs = "".join(
+                "<tr>" + "".join(f"<td>{inline(c, footnotes)}</td>" for c in r) + "</tr>"
+                for r in rows)
+            out.append(f"<table><thead><tr>{th}</tr></thead><tbody>{trs}</tbody></table>")
+            continue
+        if re.match(r"^\s*([-*_])\s*\1\s*\1[\s\1]*$", ln):
             out.append("<hr>"); i += 1; continue
         if re.match(r"^\s*>", ln):
             buf = []
-            while i < n and re.match(r"^\s*>", lines[i]):
-                buf.append(inline(re.sub(r"^\s*>\s?", "", lines[i]))); i += 1
+            while i < n and re.match(r"^\s*>", body_lines[i]):
+                buf.append(inline(re.sub(r"^\s*>\s?", "", body_lines[i]), footnotes)); i += 1
             out.append("<blockquote>" + "<br>".join(buf) + "</blockquote>"); continue
         if re.match(r"^\s*[-*+]\s+", ln):
             buf = []
-            while i < n and re.match(r"^\s*[-*+]\s+", lines[i]):
-                buf.append("<li>" + inline(re.sub(r"^\s*[-*+]\s+", "", lines[i])) + "</li>")
+            while i < n and re.match(r"^\s*[-*+]\s+", body_lines[i]):
+                buf.append("<li>" + inline(re.sub(r"^\s*[-*+]\s+", "", body_lines[i]), footnotes) + "</li>")
                 i += 1
             out.append("<ul>" + "".join(buf) + "</ul>"); continue
         if re.match(r"^\s*\d+[.)]\s+", ln):
             buf = []
-            while i < n and re.match(r"^\s*\d+[.)]\s+", lines[i]):
-                buf.append("<li>" + inline(re.sub(r"^\s*\d+[.)]\s+", "", lines[i])) + "</li>")
+            while i < n and re.match(r"^\s*\d+[.)]\s+", body_lines[i]):
+                buf.append("<li>" + inline(re.sub(r"^\s*\d+[.)]\s+", "", body_lines[i]), footnotes) + "</li>")
                 i += 1
             out.append("<ol>" + "".join(buf) + "</ol>"); continue
-        # paragraph: gather until blank line
         buf = []
-        while i < n and lines[i].strip() and not re.match(
-                r"^(#{1,6}\s|\s*>|\s*[-*+]\s|\s*\d+[.)]\s|\s*([-*_])\s*\2\s*\2)", lines[i]):
-            buf.append(inline(lines[i].strip())); i += 1
+        while i < n and body_lines[i].strip() and not re.match(
+                r"^(#{1,6}\s|\s*>|\s*[-*+]\s|\s*\d+[.)]\s|\s*([-*_])\s*\2\s*\2)", body_lines[i]) \
+                and not ("|" in body_lines[i] and i + 1 < n and _is_table_sep(body_lines[i + 1])):
+            buf.append(inline(body_lines[i].strip(), footnotes)); i += 1
         out.append("<p>" + "<br>".join(buf) + "</p>")
+
+    # pass 2: render the References list from footnote defs (in first-seen order)
+    if order:
+        items = []
+        for fid in order:
+            f = footnotes[fid]
+            label = inline(f["label"], {})
+            if f["url"]:
+                label += f' <a class="ref" href="{html.escape(f["url"], quote=True)}">↗</a>'
+            items.append(f'<li id="fn-{html.escape(fid)}"><span class="fnid">{html.escape(fid)}.</span> {label}</li>')
+        out.append('<h2 class="refs-h">References</h2><ol class="refs">' + "".join(items) + "</ol>")
     return "\n".join(out)
 
 # ---------------------------------------------------------------- template
@@ -109,7 +168,8 @@ TEMPLATE = """<!DOCTYPE html>
         border-{startside}: 4px solid #a5d6a7; padding-{startside}: 8px; }}
   h3 {{ font-size: 13pt; color: #33691e; }}
   a  {{ color: #1565c0; text-decoration: none; word-break: break-word; }}
-  a::after {{ content: " \\2197"; font-size: 0.8em; color: #90a4ae; }}
+  p a:not(.ref)::after, li a:not(.ref)::after {{
+    content: " \\2197"; font-size: 0.8em; color: #90a4ae; }}
   ul, ol {{ padding-{startside}: 22px; }}
   li {{ margin: 3px 0; }}
   blockquote {{ margin: 10px 0; padding: 8px 14px; background: #f1f8e9;
@@ -118,6 +178,23 @@ TEMPLATE = """<!DOCTYPE html>
     font-family: "SF Mono", Menlo, monospace; font-size: 0.9em;
     direction: ltr; unicode-bidi: embed; }}
   hr {{ border: none; border-top: 1px solid #cfd8dc; margin: 20px 0; }}
+  /* tables */
+  table {{ border-collapse: collapse; width: 100%; margin: 14px 0;
+    font-size: 11pt; }}
+  th, td {{ border: 1px solid #cfd8dc; padding: 6px 10px;
+    text-align: {startside}; vertical-align: top; }}
+  thead th {{ background: #e8f5e9; color: #1b5e20; font-weight: 700; }}
+  tbody tr:nth-child(even) {{ background: #f7faf7; }}
+  /* citations */
+  sup.cite {{ font-size: 0.7em; line-height: 0; }}
+  sup.cite a {{ color: #2e7d32; font-weight: 700; padding: 0 1px; }}
+  sup.cite a::after {{ content: none; }}
+  .refs-h {{ font-size: 13pt; }}
+  ol.refs {{ font-size: 10pt; color: #455a64; }}
+  ol.refs li {{ margin: 4px 0; }}
+  ol.refs {{ list-style: none; padding-{startside}: 0; }}
+  .fnid {{ color: #2e7d32; font-weight: 700; margin-{endside}: 6px; }}
+  a.ref {{ color: #90a4ae; }}
   .footer {{ margin-top: 28px; padding-top: 10px; border-top: 1px solid #cfd8dc;
     font-size: 9pt; color: #78909c; }}
 </style></head>
@@ -130,12 +207,13 @@ TEMPLATE = """<!DOCTYPE html>
 def build_html(md: str, title: str, lang: str) -> str:
     direction = "rtl" if lang == "he" else "ltr"
     startside = "right" if direction == "rtl" else "left"
+    endside = "left" if direction == "rtl" else "right"
     footer = ("הופק על ידי כלי המחקר hike-research · המקור: sipurderech.co.il"
               if lang == "he" else
               "Generated by the hike-research skill · Source: sipurderech.co.il")
     return TEMPLATE.format(
         lang=lang if lang in ("he", "en") else "en",
-        dir=direction, startside=startside,
+        dir=direction, startside=startside, endside=endside,
         title=html.escape(title), body=md_to_html(md), footer=footer)
 
 # ---------------------------------------------------------------- PDF

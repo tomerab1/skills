@@ -66,6 +66,10 @@ person browsing — not bulk ingestion or training. So:
    narrative plus the structured fields the site exposes — **תאריך הטיול**
    (trip date), **משך הטיול** (duration), **עונה מומלצת** (recommended season),
    route/map links, and a table of contents. These are the backbone of the brief.
+   The output also lists the page's **SECTIONS** — each chapter/heading with a
+   section-level deep link (`<url>#chapter-…`, plus `#tips`, `#links`). Get just
+   that map with `python3 sipur.py sections <slug>`. **Cite these section URLs,
+   not the bare page URL**, so a reference jumps the reader to the exact part.
 
 5. **Explore the graph / cluster multiple reports of the same trip.**
    ```
@@ -78,34 +82,49 @@ person browsing — not bulk ingestion or training. So:
    relevant, then re-running `related`.
 
 6. **Synthesize a source-anchored brief (Markdown).** Pull out the points that
-   matter for *this* group's hike. Every non-obvious claim ends with a Markdown
-   link to the **specific** source page it came from — use each record's `url`
-   (already percent-encoded). Suggested shape (translate to the chosen language;
-   for `he` write Hebrew, for `bi` lead in English keeping Hebrew place names):
+   matter for *this* group's hike. Use the renderer's two features to keep it
+   clean (see "Markdown the renderer understands" below):
+   - **Footnote citations, not inline links.** Define each source once at the
+     bottom as `[^1]: <author> — <title> § <section> <section-URL>` and cite it
+     in the text with a compact `[^1]`. This renders as a small superscript and a
+     single consolidated **References** list — far less clutter than a
+     `[source]` after every line. Reuse the same `[^n]` for every claim from
+     that source; add a new number only for a new source (or a meaningfully
+     different section). Aim for one citation per bullet/row, not several.
+   - **Tables for comparisons.** Put the at-a-glance summary and any
+     side-by-side comparison (e.g. routes × duration/difficulty/season) in a
+     pipe table.
+   Translate to the chosen language (for `he` write Hebrew; for `bi` lead in
+   English keeping Hebrew place names). Suggested shape:
    ```markdown
    # <Route / destination>
    _Synthesized from N trip reports on sipurderech.co.il_
 
    ## At a glance
-   - Region · best season · typical duration · difficulty · group fit
+   | | |
+   |---|---|
+   | **Region** | … |
+   | **Best season** | … [^1] |
+   | **Duration / difficulty** | … [^2] |
 
    ## Recommended route(s)
-   - <segment/day breakdown> [source](<story url>)
+   - <segment / day breakdown> [^1]
 
    ## Season & conditions
-   - <when to go, weather, snow> [source](<url>)
+   - <when to go, weather, snow> [^3]
 
    ## Logistics
-   - Getting there, huts/camping, water, permits, costs [source](<url>)
+   - Getting there, huts/camping, water, permits, costs [^1]
 
    ## Tips & warnings from hikers
-   - <personal tip / hazard> — <author> [source](<url>)
+   - <personal tip / hazard> [^2]
 
    ## Highlights
-   - <views, peaks, lakes> [source](<url>)
+   - <views, peaks, lakes> [^3]
 
-   ## Sources
-   - <title> — <author>, <month year> [↗](<url>)
+   [^1]: Maya Shemesh — 3-day Bucegi trek § Route <section-URL>
+   [^2]: Omer Noy — Omu ascent § Day 2 <section-URL>
+   [^3]: Omer Ohayon — 7-day ridge trek <page-URL>
    ```
    When reports disagree, say so and cite both. Don't invent specifics
    (distances, altitudes, prices) that aren't in the sources — attribute or omit.
@@ -118,6 +137,15 @@ person browsing — not bulk ingestion or training. So:
    `--lang he` sets RTL + Hebrew fonts; verified to render Hebrew correctly via
    headless Chrome. Confirm the output path back to the user. If no Chrome is
    found it falls back to weasyprint, else writes the `.html` to print manually.
+
+   **Markdown the renderer understands:** `#`–`######` headings; `-`/`*`/`1.`
+   lists; `> ` blockquotes; `---` rules; `**bold**`, `_italic_`, `` `code` ``;
+   `[text](url)` inline links; **GitHub pipe tables** (header row + `|---|---|`
+   separator); and **footnote citations** — `[^id]` in the body plus
+   `[^id]: label… <url>` definitions, rendered as superscripts and a numbered
+   References list (use numeric ids for clean superscripts). Inline links get a
+   `↗`; footnote superscripts don't. Tables and citations are the two features
+   to lean on for a clean, low-clutter brief.
 
 8. **Report.** Show the brief (or its key sections) in chat, note how many
    reports it draws on, and give the PDF path if one was made. Mention any place

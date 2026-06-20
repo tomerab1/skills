@@ -94,6 +94,7 @@ class Reader(HTMLParser):
         self._a_href: str | None = None
         self._a_buf: list[str] = []
         self.links: list[dict] = []
+        self.sections: list[dict] = []   # in-page anchors: {anchor, title}
         self.title = ""
         self.description = ""
         self._in_title = False
@@ -124,7 +125,11 @@ class Reader(HTMLParser):
             self._main_depth -= 1
         if tag == "a" and self._a_href is not None:
             text = re.sub(r"\s+", " ", "".join(self._a_buf)).strip()
-            self._record_link(self._a_href, text)
+            href = self._a_href
+            if href.startswith("#"):
+                self._record_section(href[1:], text)
+            else:
+                self._record_link(href, text)
             self._a_href = None
             self._a_buf = []
 
@@ -136,6 +141,14 @@ class Reader(HTMLParser):
         self._chunks.append(data)
         if self._a_href is not None:
             self._a_buf.append(data)
+
+    def _record_section(self, anchor, text):
+        anchor = anchor.strip()
+        if not anchor or anchor in ("comments", "_R_") or anchor.startswith(("B:", "S:")):
+            return  # navigation / framework anchors, not citable content
+        title = (text or anchor).lstrip("•·-–— \t").strip()
+        if not any(s["anchor"] == anchor for s in self.sections):
+            self.sections.append({"anchor": anchor, "title": title})
 
     def _record_link(self, href, text):
         try:
@@ -297,6 +310,7 @@ def fetch_one(slug: str, force: bool = False) -> dict:
         "type": ptype,
         "text": text,
         "links": children,
+        "sections": r.sections,   # [{anchor, title}] -> deep-link targets
         "fetched_at": int(time.time()),
     }
     json.dump(rec, open(cp, "w"), ensure_ascii=False)
@@ -336,6 +350,7 @@ def main(argv):
     p = sub.add_parser("discover"); p.add_argument("query"); p.add_argument("--limit", type=int, default=25)
     p = sub.add_parser("fetch"); p.add_argument("targets", nargs="+"); p.add_argument("--force", action="store_true")
     p = sub.add_parser("show"); p.add_argument("target")
+    p = sub.add_parser("sections"); p.add_argument("target")
     p = sub.add_parser("graph"); p.add_argument("--format", choices=["json", "summary"], default="summary")
     p = sub.add_parser("related"); p.add_argument("target"); p.add_argument("--depth", type=int, default=1)
 
@@ -359,11 +374,21 @@ def main(argv):
         print(f"# {rec['title']}\nURL: {rec['url']}\nTYPE: {rec['type']}\n")
         if rec.get("description"):
             print(rec["description"] + "\n")
+        if rec.get("sections"):
+            print("--- SECTIONS (cite these section-level deep links) ---")
+            for s in rec["sections"]:
+                print(f"- {s['title']} -> {rec['url']}#{s['anchor']}")
+            print()
         print(rec["text"])
         if rec["links"]:
             print("\n--- LINKS ---")
             for ln in rec["links"]:
                 print(f"- {ln['text'] or '(no text)'} -> {url_of(ln['slug'])}")
+    elif args.cmd == "sections":
+        rec = fetch_one(args.target)
+        url = rec.get("url", url_of(args.target))
+        for s in rec.get("sections", []):
+            print(f"{url}#{s['anchor']}\t{s['title']}")
     elif args.cmd == "graph":
         g = load_graph()
         if args.format == "json":
