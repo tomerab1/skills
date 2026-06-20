@@ -67,6 +67,30 @@ The GitHub sibling of `dm-todos` / `clickup-todos` — scoped to the
 
 Requires the `gh` CLI (authenticated) and the Slack MCP integration.
 
+### hike-research
+
+Research a hiking destination from real trip reports (*sipurei derech*) on
+[sipurderech.co.il](https://www.sipurderech.co.il) and distill the important
+points into a source-anchored brief:
+
+1. Matches a destination (Hebrew or English) against the site's sitemap, then
+   politely fetches the region hub and the relevant trip stories — rate-limited
+   and disk-cached under `~/.claude/hike-research/`, so it stays targeted and
+   each page is pulled at most once
+2. Builds a local **knowledge graph** of the fetched pages (region → sub-region
+   → trip-story → author, plus link relations) so several reports about the
+   same trip can be clustered and cross-checked
+3. Synthesizes the points that matter for *your* group's hike — season,
+   route, difficulty, huts/water/logistics, gear, warnings, highlights — with
+   every claim linked back to the specific source page
+4. Optionally renders the brief as a **PDF** in Hebrew (RTL), English, or
+   bilingual via headless Chrome (correct Hebrew bidi, no extra dependencies)
+
+Two pure-stdlib helpers ship with it: `sipur.py` (discover / fetch / cache /
+graph / related) and `render_pdf.py` (Markdown → styled PDF). Content is
+Hebrew; the skill translates for English/bilingual output. For personal trip
+planning — it deliberately never crawls the whole site.
+
 ## Install
 
 **Per-user (all projects):**
@@ -94,6 +118,7 @@ Each skill is invoked from inside Claude Code by name:
 /clickup-todos
 /github-todos
 /test-planner <file | diff | feature>
+/hike-research <destination + when / how many days / who's going>
 ```
 
 The three todo-digest skills (`dm-todos`, `clickup-todos`, `github-todos`)
