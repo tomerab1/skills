@@ -1,0 +1,13 @@
+{
+  "name": "whatsapp-kg-ingest",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Baileys ingestion for the whatsapp-kg skill — archives one WhatsApp group into a local SQLite store. No Anthropic SDK; the LLM work happens through Claude Code.",
+  "dependencies": {
+    "baileys": "7.0.0-rc13",
+    "better-sqlite3": "^12.11.1",
+    "pino": "^10.3.1",
+    "qrcode-terminal": "^0.12.0"
+  }
+}

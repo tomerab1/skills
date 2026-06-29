@@ -1,0 +1,21 @@
+# Dependencies (install via npm where a skill has package.json)
+node_modules/
+
+# Skill runtime / captured data — never commit
+.runtime/
+*.pid
+*.log
+**/capture-*.json
+console.jsonl
+network.jsonl
+state.json
+
+# Local stores / secrets (e.g. whatsapp-kg Baileys auth + chat DB)
+*.db
+*.sqlite
+*.sqlite3
+auth_info*/
+creds.json
+
+# OS
+.DS_Store

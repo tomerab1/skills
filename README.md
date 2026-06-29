@@ -91,6 +91,81 @@ graph / related) and `render_pdf.py` (Markdown → styled PDF). Content is
 Hebrew; the skill translates for English/bilingual output. For personal trip
 planning — it deliberately never crawls the whole site.
 
+### walk-route
+
+The on-the-ground companion to `hike-research`: turn a place + preferences into
+a **followable GPX walking route**, built from OpenStreetMap:
+
+1. **Geocodes** the start / endpoints (Nominatim — Hebrew or English)
+2. **Discovers what's around** via Overpass — parks, water, viewpoints, paths,
+   cafés, playgrounds, … filtered by the walk's theme
+3. **Routes it for real** with BRouter foot profiles: fits a round-trip of a
+   target distance through spread-out POIs, or routes an A→B through chosen
+   waypoints
+4. **Writes a `.gpx`** (track + the chosen POIs as waypoints) to load on a
+   phone / GPS watch / Komoot / Gaia, plus a short in-chat summary and an
+   optional one-click overpass-turbo.eu link to eyeball the OSM data on a map
+
+One pure-stdlib helper ships with it — `walk.py` (`geocode` / `features` /
+`route` / `loop` / `turbo`). Talks only to free OSM-ecosystem services, with
+every response disk-cached and each host rate-limited. For personal route
+planning — keep it targeted, not bulk harvesting.
+
+### x-reading
+
+A reading-digest sibling of the todo skills, sourced from X (Twitter):
+
+1. Scrapes the **logged-in** X feed / a List via Playwright driving the
+   existing Chrome session — pulling tweets that share *external articles*
+2. Ranks them by the user's interests (software engineering & devtools,
+   AI/ML/LLMs), skipping threads, promos, and link-less chatter
+3. Maintains a dedicated "X Reading" canvas (in the self-DM) as a curated,
+   de-duplicated reading list that carries over between runs
+
+Requires a logged-in Chrome session (Playwright) and the Slack MCP integration.
+
+### pr-review
+
+Reviews GitHub PRs by **actually running them**, not just reading the diff:
+
+1. Clones each PR and detects what it changes — a server (tested via `curl`)
+   and/or a native iOS app (built, booted on the simulator, driven through the
+   UI via `simctl` / `idb`)
+2. Combines a code-level read of the diff with **real runtime evidence**
+   (requests/responses, screenshots, logs)
+3. Writes a per-PR markdown review
+
+Ships two helper agents — `pr-server-tester` and `pr-ios-tester`. Requires the
+`gh` CLI; iOS testing needs Xcode + a simulator.
+
+### rn-devtools
+
+Chrome-DevTools-style **Console + Network** (plus live `eval`) for a running
+React Native / Hermes app on the iOS Simulator, driven from the terminal:
+
+1. Attaches to Metro's built-in CDP inspector proxy (`localhost:8081`) — no
+   proxy, cert, or Flipper needed
+2. Streams `console.*` / exceptions and full network requests
+   (method/status/timing/size, optional bodies) into queryable JSONL buffers
+3. Filterable queries (`console --level error`, `net --failed --since 2m`), a
+   `wait --match` trigger that fires when a matching request lands, and `eval`
+   to run JS in the app's context
+
+Zero dependencies (Node 22 built-in `WebSocket`/`fetch`). The connector is a
+single client — don't run React Native DevTools at the same time.
+
+### whatsapp-kg
+
+Archive **one** WhatsApp group into a local store and distill it into a
+queryable knowledge graph, so its knowledge stays available years later:
+
+1. **Ingestion** via Baileys (run always-on under pm2) into a local SQLite store
+2. **Extraction** of an entity/relation knowledge graph from the messages
+3. **Q&A** over the graph through Claude Code itself — no Anthropic SDK
+
+Run `npm install` in the skill dir first (Baileys, `better-sqlite3`). The
+WhatsApp session auth and the chat database are kept **local and gitignored**.
+
 ## Install
 
 **Per-user (all projects):**
@@ -119,6 +194,11 @@ Each skill is invoked from inside Claude Code by name:
 /github-todos
 /test-planner <file | diff | feature>
 /hike-research <destination + when / how many days / who's going>
+/walk-route <start place + distance or A→B, e.g. "4km park loop from Rothschild Blvd">
+/x-reading
+/pr-review <GitHub PR links>
+/rn-devtools <what to debug in the running RN app>
+/whatsapp-kg <ingest | extract | a question about the archived group>
 ```
 
 The three todo-digest skills (`dm-todos`, `clickup-todos`, `github-todos`)

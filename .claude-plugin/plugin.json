@@ -1,6 +1,6 @@
 {
   "name": "tomerab-skills",
-  "description": "Personal Claude Code skills: interactive test planning (propose -> human curates -> generate) and Slack DM todo triage.",
-  "version": "0.1.0",
+  "description": "Personal Claude Code skills: interactive test planning, Slack/ClickUp/GitHub todo triage, X reading digest, hike-report research, OpenStreetMap walking-route planning, runtime PR review, React Native DevTools, and WhatsApp knowledge-graph archiving.",
+  "version": "0.2.0",
   "author": { "name": "tomerab" }
 }
