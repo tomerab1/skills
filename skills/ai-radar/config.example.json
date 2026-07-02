@@ -1,0 +1,71 @@
+{
+  "title": "AI Radar",
+  "interests": [
+    "AI models & providers (releases, pricing, capabilities, context limits)",
+    "Claude Code skills, plugins, subagents & MCP",
+    "Agents & agent frameworks (orchestration, multi-agent, MCP servers)",
+    "Devtools, developer experience & engineering best practices"
+  ],
+  "lookbackDays": 21,
+  "hackernews": {
+    "enabled": true,
+    "minPoints": 60,
+    "queries": ["Claude Code", "Claude", "Anthropic", "MCP", "AI agent", "agentic", "Claude skill", "agent framework"]
+  },
+  "arxiv": {
+    "enabled": true,
+    "max": 12,
+    "queries": [
+      "cat:cs.CL AND abs:agent",
+      "cat:cs.AI AND abs:agent",
+      "cat:cs.AI AND abs:agentic",
+      "cat:cs.SE AND abs:agent"
+    ]
+  },
+  "relevance": {
+    "dimBelow": 2,
+    "keywords": {
+      "claude code": 5, "claude": 3, "anthropic": 3, "mcp": 4, "model context protocol": 4,
+      "subagent": 4, "agentic": 3, "agent": 3, "skill": 3, "plugin": 2, "devtools": 2,
+      "developer experience": 2, "orchestrat": 2, "rag": 1, "llm": 1, "openai": 1,
+      "gemini": 1, "prompt": 1, "eval": 1
+    }
+  },
+  "github": {
+    "minStars": 15,
+    "searchQueries": [
+      "claude code skill stars:>20",
+      "claude code plugin stars:>15",
+      "mcp server stars:>80",
+      "ai agent framework stars:>120",
+      "claude agent skill stars:>20"
+    ],
+    "watchRepos": [
+      "anthropics/claude-code",
+      "anthropics/skills",
+      "anthropics/claude-agent-sdk-python",
+      "anthropics/claude-agent-sdk-typescript",
+      "modelcontextprotocol/servers",
+      "modelcontextprotocol/modelcontextprotocol",
+      "openai/openai-agents-python"
+    ]
+  },
+  "providers": [
+    { "name": "Simon Willison",   "url": "https://simonwillison.net/atom/everything/" },
+    { "name": "Anthropic Eng",    "url": "https://www.anthropic.com/rss.xml" },
+    { "name": "OpenAI News",      "url": "https://openai.com/news/rss.xml" },
+    { "name": "Google AI Blog",   "url": "https://blog.google/technology/ai/rss/" },
+    { "name": "Hugging Face",     "url": "https://huggingface.co/blog/feed.xml" },
+    { "name": "GitHub Blog",      "url": "https://github.blog/feed/" },
+    { "name": "Latent Space",     "url": "https://www.latent.space/feed" }
+  ],
+  "x": {
+    "enabled": true,
+    "scrolls": 6,
+    "max": 40,
+    "searchUrls": [
+      "https://x.com/search?q=(%22claude%20code%22%20OR%20%22claude%20skill%22%20OR%20MCP%20OR%20%22ai%20agent%22)%20filter%3Alinks%20min_faves%3A30&f=live",
+      "https://x.com/search?q=(LLM%20OR%20%22ai%20agent%22%20OR%20anthropic%20OR%20openai)%20(devtools%20OR%20%22best%20practices%22)%20filter%3Alinks%20min_faves%3A40&f=live"
+    ]
+  }
+}

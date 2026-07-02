@@ -1,6 +1,6 @@
 {
   "name": "tomerab-skills",
-  "description": "Personal Claude Code skills: interactive test planning, Slack/ClickUp/GitHub todo triage, X reading digest, hike-report research, OpenStreetMap walking-route planning, runtime PR review, React Native DevTools, and WhatsApp knowledge-graph archiving.",
-  "version": "0.2.0",
+  "description": "Personal Claude Code skills: interactive test planning, Slack/ClickUp/GitHub todo triage, X reading digest, hike-report research, OpenStreetMap walking-route planning, runtime PR review, React Native DevTools, WhatsApp knowledge-graph archiving, and an AI-ecosystem radar (GitHub/RSS/HN/arXiv/X → knowledge graph → HTML dashboard).",
+  "version": "0.3.0",
   "author": { "name": "tomerab" }
 }
