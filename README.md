@@ -39,6 +39,31 @@ watched repos/packages, subreddits, interests, relevance keywords, and X
 mute-words via `config.example.json` (copied to `~/ai-radar/config.json` at
 setup).
 
+### debrief
+
+Pay down comprehension debt on code that Claude/agents shipped for you — so you
+can defend the work in reviews and interviews:
+
+1. `/debrief <ticket|PR|branch|"last week">` gathers the diff (the 5-9 files
+   that matter) and, with approval, mines your local CC transcripts for the
+   *rationale* — decisions and rejected alternatives that diffs don't contain
+2. Writes a 15-minute brief to `~/debriefs/<repo>/` (private — transcript-mined
+   content never lands in work repos): elevator, mermaid data flow, files that
+   matter, decisions & alternatives, invariants & gotchas
+3. Generates an interactive HTML quiz (free-text + MCQ) whose answers submit
+   **directly into your running session** via a custom [Claude Code
+   channel](https://code.claude.com/docs/en/channels) (`channel/debrief-channel.mjs`,
+   localhost + token-gated); Claude grades honestly and the report streams back
+   into the quiz page over SSE
+4. Wrong answers feed SM-2-lite spaced repetition (`~/debriefs/state.json`) so
+   weak concepts resurface in future quizzes
+
+Channel setup: `npm install` in `skills/debrief/channel/`, register with
+`claude mcp add --scope user debrief -- node <abs-path>/debrief-channel.mjs`,
+then run sessions with `claude --dangerously-load-development-channels
+server:debrief` (channels are a research preview). Copy-to-clipboard fallback
+works without the channel.
+
 ### test-planner
 
 Interactive test planning that keeps the developer in the loop at the step

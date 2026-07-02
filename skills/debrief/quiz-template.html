@@ -1,0 +1,127 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Debrief quiz — {{FEATURE}}</title>
+<!-- Template for /debrief quizzes. Replace {{...}} placeholders and the QUESTIONS array.
+     Answers auto-save to localStorage["debrief:v1:{{QUIZ_ID}}"]; Claude reads that key via
+     the Chrome MCP for grading ("Copy answers" is the fallback path). -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#1b1a16;--panel:#24231e;--panel2:#2b2a24;--line:rgba(240,238,230,.085);--line2:rgba(240,238,230,.16);
+    --ink:#f0eee6;--mut:#b9b5a7;--faint:#8b8779;--accent:#d97757;--accent2:#e59f86;
+    --ui:"Familjen Grotesk",-apple-system,sans-serif;--prose:"Source Serif 4",Georgia,serif;--mono:"IBM Plex Mono",monospace}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 var(--ui);-webkit-font-smoothing:antialiased}
+  ::selection{background:var(--accent);color:#1b1a16}
+  .wrap{max-width:760px;margin:0 auto;padding:34px 22px 90px}
+  .brand{display:flex;align-items:center;gap:9px;font:600 15px var(--ui)}
+  .brand .dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 9px rgba(217,119,87,.55)}
+  h1{font:600 26px/1.2 var(--ui);letter-spacing:-.01em;margin:14px 0 4px}
+  .meta{color:var(--faint);font:400 12px var(--mono);margin-bottom:26px}
+  .q{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;margin:14px 0}
+  .q .tag{font:500 10px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:8px;display:flex;gap:8px}
+  .q .tag .rev{color:var(--faint);border:1px dashed var(--line2);border-radius:5px;padding:0 6px}
+  .q .text{font:400 16px/1.55 var(--prose);color:var(--ink);margin-bottom:12px}
+  textarea{width:100%;min-height:88px;background:var(--bg);border:1px solid var(--line2);border-radius:9px;
+    padding:10px 12px;color:var(--ink);font:400 14px/1.5 var(--prose);outline:none;resize:vertical}
+  textarea:focus{border-color:rgba(217,119,87,.55)}
+  .opt{display:flex;align-items:baseline;gap:9px;padding:8px 10px;border:1px solid var(--line);border-radius:9px;margin:6px 0;cursor:pointer;color:var(--mut)}
+  .opt:hover{border-color:var(--line2);color:var(--ink)}
+  .opt input{accent-color:var(--accent)}
+  .bar{position:sticky;bottom:0;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(8px);
+    border-top:1px solid var(--line);padding:12px 0;display:flex;gap:10px;align-items:center;margin-top:26px}
+  button{background:var(--accent);border:0;border-radius:9px;padding:9px 16px;color:#1b1a16;font:600 13px var(--ui);cursor:pointer}
+  button.ghost{background:transparent;border:1px solid var(--line2);color:var(--mut)}
+  button:hover{filter:brightness(1.08)}
+  .grade{background:var(--panel);border:1px solid rgba(217,119,87,.4);border-radius:12px;padding:18px;margin:18px 0;display:none}
+  .grade h2{font:600 15px var(--ui);color:var(--accent);margin:0 0 8px}
+  .grade pre{white-space:pre-wrap;font:400 13.5px/1.6 var(--prose);color:var(--mut);margin:0}
+  #status{font:400 11.5px var(--mono);color:var(--faint)}
+  .done{color:#7fbf9e}
+</style></head><body><div class="wrap">
+  <div class="brand"><span class="dot"></span>Debrief</div>
+  <h1>{{FEATURE_TITLE}}</h1>
+  <div class="meta">{{REPO}} · {{DATE}} · answer in your own words — Claude grades honestly, not kindly</div>
+  <div id="quiz"></div>
+  <div class="bar">
+    <button id="submit">Submit to Claude</button>
+    <button class="ghost" id="copy">Copy answers for Claude</button>
+    <span id="status">answers auto-save locally</span>
+  </div>
+<script>
+// ---- REPLACE: quiz definition -------------------------------------------------------
+const QUIZ_ID = "{{QUIZ_ID}}"; // e.g. "server/SING-12250-2026-07-02"
+const QUESTIONS = [
+  // {id:"q1", concept:"parse-tree-cache", type:"text", review:false,
+  //  text:"Why is the parse cache keyed on sha256(line + lang) rather than track id?"},
+  // {id:"q2", concept:"ppp-arc", type:"mcq", review:true,
+  //  text:"What ends every section lesson?",
+  //  options:["A grammar drill","A guided-listening finale","An MCQ batch","A review of weak words"]},
+];
+// --------------------------------------------------------------------------------------
+const KEY = "debrief:v1:" + QUIZ_ID;
+const saved = (() => { try { return JSON.parse(localStorage.getItem(KEY) || "{}"); } catch { return {}; } })();
+const root = document.getElementById("quiz");
+QUESTIONS.forEach((q, i) => {
+  const div = document.createElement("div");
+  div.className = "q"; div.dataset.concept = q.concept;
+  let body;
+  if (q.type === "mcq") {
+    body = q.options.map((o, j) =>
+      `<label class="opt"><input type="radio" name="${q.id}" value="${j}" ${saved.answers?.[q.id]==String(j)?"checked":""}> ${o}</label>`).join("");
+  } else {
+    body = `<textarea data-q="${q.id}" placeholder="your answer…">${saved.answers?.[q.id] || ""}</textarea>`;
+  }
+  div.innerHTML = `<div class="tag">Q${i+1} · ${q.concept}${q.review?'<span class="rev">review</span>':""}</div>
+    <div class="text">${q.text}</div>${body}`;
+  root.appendChild(div);
+});
+function collect() {
+  const answers = {};
+  QUESTIONS.forEach(q => {
+    if (q.type === "mcq") { const c = document.querySelector(`input[name="${q.id}"]:checked`); if (c) answers[q.id] = c.value; }
+    else { const t = document.querySelector(`textarea[data-q="${q.id}"]`); if (t && t.value.trim()) answers[q.id] = t.value.trim(); }
+  });
+  return { quizId: QUIZ_ID, at: new Date().toISOString(),
+    questions: QUESTIONS.map(q => ({ id: q.id, concept: q.concept, type: q.type, text: q.text, options: q.options })),
+    answers };
+}
+function save() {
+  const data = collect();
+  try { localStorage.setItem(KEY, JSON.stringify(data)); } catch {}
+  const n = Object.keys(data.answers).length;
+  const st = document.getElementById("status");
+  st.textContent = `${n}/${QUESTIONS.length} answered · saved locally`;
+  st.className = n === QUESTIONS.length ? "done" : "";
+}
+document.addEventListener("input", save);
+document.getElementById("copy").addEventListener("click", async () => {
+  save();
+  try { await navigator.clipboard.writeText(JSON.stringify(collect(), null, 1));
+    document.getElementById("status").textContent = "copied — paste into Claude to grade"; } catch {}
+});
+save();
+
+// ---- direct submit via the debrief channel (localhost:8789) ----------------
+const CH = "http://127.0.0.1:8789", CH_TOKEN = "{{CHANNEL_TOKEN}}";
+const gradeBox = document.createElement("div");
+gradeBox.className = "grade"; gradeBox.innerHTML = "<h2>Claude's grade</h2><pre></pre>";
+document.querySelector(".bar").before(gradeBox);
+new EventSource(CH + "/events?quiz_id=" + encodeURIComponent(QUIZ_ID)).onmessage = (e) => {
+  try { const d = JSON.parse(e.data); if (d.quizId === QUIZ_ID) {
+    gradeBox.style.display = "block"; gradeBox.querySelector("pre").textContent = d.text;
+    gradeBox.scrollIntoView({ behavior: "smooth" }); } } catch {}
+};
+document.getElementById("submit").addEventListener("click", async () => {
+  save();
+  const st = document.getElementById("status");
+  try {
+    const r = await fetch(CH + "/submit", { method: "POST",
+      headers: { "X-Debrief-Token": CH_TOKEN }, body: JSON.stringify(collect()) });
+    st.textContent = r.ok ? "submitted — grading in your Claude session…"
+      : "submit failed (" + r.status + ") — is claude running with the debrief channel?";
+  } catch { st.textContent = "channel offline — start claude with the debrief channel, or use Copy"; }
+});
+</script>
+</div></body></html>
