@@ -12,6 +12,41 @@
     "minPoints": 60,
     "queries": ["Claude Code", "Claude", "Anthropic", "MCP", "AI agent", "agentic", "Claude skill", "agent framework"]
   },
+  "lobsters": {
+    "enabled": true,
+    "minScore": 5,
+    "tags": ["ai"]
+  },
+  "reddit": {
+    "enabled": true,
+    "window": "day",
+    "max": 10,
+    "subreddits": ["ClaudeAI", "ClaudeCode", "mcp", "LocalLLaMA", "ChatGPTCoding", "AI_Agents", "codex"]
+  },
+  "huggingface": {
+    "enabled": true,
+    "max": 15
+  },
+  "npm": {
+    "enabled": true,
+    "watchPackages": [
+      "@anthropic-ai/claude-code",
+      "@anthropic-ai/claude-agent-sdk",
+      "@modelcontextprotocol/sdk",
+      "@openai/codex",
+      "ai"
+    ],
+    "searchQueries": ["keywords:mcp-server"],
+    "searchSize": 20
+  },
+  "changelogs": [
+    {
+      "repo": "anthropics/claude-code",
+      "url": "https://raw.githubusercontent.com/anthropics/claude-code/main/CHANGELOG.md",
+      "tagPrefix": "v",
+      "max": 6
+    }
+  ],
   "arxiv": {
     "enabled": true,
     "max": 12,
@@ -47,17 +82,24 @@
       "anthropics/claude-agent-sdk-typescript",
       "modelcontextprotocol/servers",
       "modelcontextprotocol/modelcontextprotocol",
-      "openai/openai-agents-python"
+      "openai/openai-agents-python",
+      "openai/codex",
+      "google-gemini/gemini-cli",
+      "ollama/ollama",
+      "vercel/ai",
+      "cline/cline",
+      "sst/opencode"
     ]
   },
   "providers": [
     { "name": "Simon Willison",   "url": "https://simonwillison.net/atom/everything/" },
-    { "name": "Anthropic Eng",    "url": "https://www.anthropic.com/rss.xml" },
     { "name": "OpenAI News",      "url": "https://openai.com/news/rss.xml" },
     { "name": "Google AI Blog",   "url": "https://blog.google/technology/ai/rss/" },
     { "name": "Hugging Face",     "url": "https://huggingface.co/blog/feed.xml" },
     { "name": "GitHub Blog",      "url": "https://github.blog/feed/" },
-    { "name": "Latent Space",     "url": "https://www.latent.space/feed" }
+    { "name": "Latent Space",     "url": "https://www.latent.space/feed" },
+    { "name": "Cursor Changelog", "url": "https://cursor.com/changelog/rss.xml" },
+    { "name": "Anthropic YouTube","url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCrDwWp7EBBv4NwvScIpBDOA" }
   ],
   "x": {
     "enabled": true,
@@ -66,6 +108,12 @@
     "searchUrls": [
       "https://x.com/search?q=(%22claude%20code%22%20OR%20%22claude%20skill%22%20OR%20MCP%20OR%20%22ai%20agent%22)%20filter%3Alinks%20min_faves%3A30&f=live",
       "https://x.com/search?q=(LLM%20OR%20%22ai%20agent%22%20OR%20anthropic%20OR%20openai)%20(devtools%20OR%20%22best%20practices%22)%20filter%3Alinks%20min_faves%3A40&f=live"
+    ],
+    "muteWords": [
+      "crypto", "airdrop", "giveaway", "okx.ai", "casino", "betting", "trading signals",
+      "lnkd.in", "t.me/", "free course", "with certificates", "certificates)",
+      "tools you can't ignore", "stop wasting hours", "i have already done it for you",
+      "solves anything", "become a company"
     ]
   }
 }

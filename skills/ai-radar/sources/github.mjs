@@ -18,7 +18,7 @@ async function searchRepos(query, minStars) {
     const out = await gh([
       'search', 'repos', query,
       '--sort', 'stars', '--order', 'desc', '--limit', '15',
-      '--json', 'fullName,description,stargazersCount,url,updatedAt,createdAt',
+      '--json', 'fullName,description,stargazersCount,forksCount,url,updatedAt,createdAt',
     ]);
     const rows = JSON.parse(out || '[]');
     return rows.filter(r => (r.stargazersCount || 0) >= (minStars || 0));
@@ -58,6 +58,7 @@ export async function ingestGitHub(db, cfg) {
       const entId = upsertEntity(db, { type: 'repo', name: r.fullName, url: r.url, meta: { stars: r.stargazersCount } });
       upsertEntity(db, { type: 'org', name: r.fullName.split('/')[0], url: `https://github.com/${r.fullName.split('/')[0]}` });
       recordMetric(db, r.fullName, 'stars', r.stargazersCount);
+      recordMetric(db, r.fullName, 'forks', r.forksCount);
     }
   }
 

@@ -10,24 +10,34 @@ A personal radar for the AI dev ecosystem — discover new models & providers,
 Claude Code skills/plugins, agent frameworks & MCP, and devtools, then read
 them in a polished HTML dashboard:
 
-1. A cheap, deterministic ingest (GitHub via `gh`, provider RSS/Atom feeds,
-   Hacker News, arXiv) into a local SQLite **knowledge graph**
-   (`~/ai-radar/radar.db`, via Node's built-in `node:sqlite` — no native
-   deps). Designed for a pure-Node hourly cron — **no `claude -p`, no
-   Anthropic SDK, no metered calls** anywhere in the automated path
+1. A cheap, deterministic ingest (GitHub via `gh`, the claude-code
+   `CHANGELOG.md`, provider RSS/Atom feeds, Hacker News, Lobsters, Reddit
+   multi-subreddit RSS, Hugging Face trending models, the npm registry, arXiv)
+   into a local SQLite **knowledge graph** (`~/ai-radar/radar.db`, via Node's
+   built-in `node:sqlite` — no native deps). Designed for a pure-Node hourly
+   cron — **no `claude -p`, no Anthropic SDK, no metered calls** anywhere in
+   the automated path
 2. On demand (`/ai-radar`), the in-session model also scrapes the logged-in X
    feed and web search, ranks everything against your interests with a
    one-line "why you'd care", and renders a self-contained dashboard
-3. The dashboard has a filter/search/sort toolbar, a scrollspy sidebar tree,
-   deterministic relevance scoring (off-topic items dimmed, not dropped), a
-   "new since last visit" marker, trending-repo star deltas, and
-   markdown-rendered cards
-4. A zero-LLM `--from-db` render mode builds straight from the graph, so the
+3. Items are deduped by **normalized URL** across sources — when the same
+   story lands via a feed, HN, and Reddit it becomes one card with
+   "also on…" badges linking each discussion — and curated reports mark
+   items seen/featured in the graph, so the next run surfaces what's
+   genuinely new
+4. The dashboard (warm-dark theme, coral accent, grotesk + serif type) has a
+   filter/search/sort toolbar, a scrollspy section rail, deterministic
+   relevance scoring (off-topic items dimmed, not dropped), ★ save and
+   read-state persisted across reports, `j`/`k`/`o`/`s` keyboard navigation,
+   "new since last visit" markers, trending-repo star deltas with sparklines,
+   markdown-rendered cards, and a report archive
+5. A zero-LLM `--from-db` render mode builds straight from the graph, so the
    hourly cron keeps `latest.html` fresh for free
 
 Reuses the `x-reading` logged-in Chrome profile for the X source. Tune sources,
-watched repos, interests, and relevance keywords via `config.example.json`
-(copied to `~/ai-radar/config.json` at setup).
+watched repos/packages, subreddits, interests, relevance keywords, and X
+mute-words via `config.example.json` (copied to `~/ai-radar/config.json` at
+setup).
 
 ### test-planner
 

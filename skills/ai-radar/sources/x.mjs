@@ -21,7 +21,8 @@ async function scrapeOne(url, scrolls, max) {
 export async function ingestX(db, cfg) {
   const x = cfg.x || {};
   if (!x.enabled) return { scanned: 0, added: 0, skipped: 'disabled' };
-  let scanned = 0, added = 0;
+  const mute = (x.muteWords || []).map(w => String(w).toLowerCase());
+  let scanned = 0, added = 0, muted = 0;
   for (const url of (x.searchUrls || [])) {
     let items = [];
     try { items = await scrapeOne(url, x.scrolls ?? 6, x.max ?? 40); }
@@ -29,6 +30,9 @@ export async function ingestX(db, cfg) {
     for (const it of items) {
       scanned++;
       const title = it.cardTitle || (it.tweetText || '').slice(0, 120) || it.url;
+      // config-driven noise filter: crypto spam, listicle bait, link shorteners…
+      const txt = `${title} ${it.tweetText || ''} ${it.url || ''}`.toLowerCase();
+      if (mute.some(w => txt.includes(w))) { muted++; continue; }
       const isNew = upsertItem(db, {
         source: 'x', kind: 'tweet', title, url: it.url,
         summary: it.tweetText || '', author: it.handle || it.author, published: it.postedAt,
@@ -38,8 +42,8 @@ export async function ingestX(db, cfg) {
       if (it.handle) upsertEntity(db, { type: 'person', name: it.handle, url: `https://x.com/${String(it.handle).replace(/^@/, '')}` });
     }
   }
-  log(`scanned ${scanned}, new ${added}`);
-  return { scanned, added };
+  log(`scanned ${scanned}, new ${added}, muted ${muted}`);
+  return { scanned, added, muted };
 }
 
 // Standalone: `node sources/x.mjs` — used by the /ai-radar on-demand step.

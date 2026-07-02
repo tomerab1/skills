@@ -1,7 +1,7 @@
 // sources/hackernews.mjs — top AI/agent/Claude/MCP stories from Hacker News via the public
 // Algolia HN Search API (no auth, pure HTTP) — cheap enough for the hourly cron. Filters by
 // points + recency so only stories that actually got traction land in the knowledge graph.
-import { openDb, loadConfig, upsertItem } from '../db.mjs';
+import { openDb, loadConfig, upsertItem, itemIdFor, recordMetric } from '../db.mjs';
 
 const log = (...a) => process.stderr.write('[hn] ' + a.join(' ') + '\n');
 
@@ -45,8 +45,11 @@ export async function ingestHackerNews(db, cfg) {
         summary: `▲ ${h.points} points · ${h.num_comments || 0} comments · [HN discussion](${hnUrl})`,
         author: h.author, published: new Date(h.created_at_i * 1000).toISOString(),
         tags: ['hn', q], raw: { points: h.points, comments: h.num_comments, id: h.objectID },
+        discussion: { url: hnUrl, note: `HN ▲${h.points}` },
       });
       if (isNew) added++;
+      // points snapshot every scan → "rising stories" (velocity) via metric deltas
+      recordMetric(db, itemIdFor(h.url || hnUrl), 'hn_points', h.points);
     }
   }
   log(`scanned ${scanned}, new ${added}`);
